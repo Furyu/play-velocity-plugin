@@ -15,8 +15,6 @@ libraryDependencies ++= Seq(
 )
 ```
 
-Check LATEST_VERSION in FuRyu-Repository.
-
 Edit file `conf/play.plugins`
 
 ```
