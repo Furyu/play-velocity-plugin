@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>__title__</title>
+    </head>
+    <body>
+Index: ${index}<br />
+Kind: ${kind}<br />
+    </body>
+</html>

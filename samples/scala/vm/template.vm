@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>__title__</title>
+    </head>
+    <body>
+
+my name is ${name}<br />
+${link}<br />
+${link.getHoge()}<br />
+${link.hoge}<br />
+${link.fuga}<br />
+${user}<br />
+${user.id}<br />
+${user.id()}<br />
+${user.name}<br />
+${user.name()}<br />
+${i}<br />
+
+#foreach($u in $users)
+  ${u.id()} / ${u.name()}<br />
+#end
+
+    </body>
+</html>

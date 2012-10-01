@@ -1,0 +1,8 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET     /                             controllers.Application.index()
+GET     /2/                           controllers.Application.index2(kind: String ?= "__kind__", index: Int ?= 10)
+GET     /3/                           controllers.Application.index3()
