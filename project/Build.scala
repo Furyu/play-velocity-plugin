@@ -23,8 +23,36 @@ object ApplicationBuild extends Build {
     organization := appOrganization,
     version := appVersion,
     publishMavenStyle := true,
-    publishTo := Some(
-      "RepositoryUrl" at "TODO"
+    publishTo <<= version { (v: String) =>
+      val nexus = "https://oss.sonatype.org/"
+      if (v.trim.endsWith("SNAPSHOT")) {
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      } else {
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+      }
+    },
+    publishArtifact in Test := false,
+    pomIncludeRepository := { _ => false },
+    pomExtra := (
+      <url>https://github.com/Furyu/play-velocity-plugin</url>
+      <licenses>
+        <license>
+          <name>Apache License, Version 2.0</name>
+          <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+          <distribution>repo</distribution>
+        </license>
+      </licenses>
+      <scm>
+        <url>git@github.com:Furyu/play-velocity-plugin.git</url>
+        <connection>scm:git:git@github.com:Furyu/play-velocity-plugin.git</connection>
+      </scm>
+      <developers>
+        <developer>
+          <id>flysheep1980</id>
+          <name>flysheep1980</name>
+          <url>https://github.com/flysheep1980</url>
+        </developer>
+      </developers>
     )
   ).settings(scalariformSettings: _*).settings(scalaRiformSettings)
 

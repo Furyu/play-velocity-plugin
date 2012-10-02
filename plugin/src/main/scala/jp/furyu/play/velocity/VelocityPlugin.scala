@@ -25,48 +25,48 @@ import play.api.Plugin
  */
 class VelocityPlugin(app: Application) extends Plugin {
 
-	private val VelocityPluginRuntimeProperties = "velocity_plugin.properties"
+  private val VelocityPluginRuntimeProperties = "velocity_plugin.properties"
 
-	override def onStart() {
-		// initialize velocity engine
-		val prop = new Properties
-		val is = this.getClass().getResourceAsStream("/" + VelocityPluginRuntimeProperties)
-		if (is != null) {
-			prop.load(is)
-		}
-		Velocity.init(prop)
-	}
+  override def onStart() {
+    // initialize velocity engine
+    val prop = new Properties
+    val is = this.getClass().getResourceAsStream("/" + VelocityPluginRuntimeProperties)
+    if (is != null) {
+      prop.load(is)
+    }
+    Velocity.init(prop)
+  }
 
-	override def onStop() {
-	}
-	override def enabled: Boolean = true
+  override def onStop() {
+  }
+  override def enabled: Boolean = true
 }
 
 package object mvc {
 
-	/**
-	 * marge velocity template to Html.
-	 *
-	 * @param templatePath relative path of template file to "file.resource.loader.path"
-	 * @param attributes request attributes (default empty)
-	 * @param charset encoding template charset (default utf-8)
-	 * @return Html
-	 * @throws ResourceNotFoundException not found template file
-	 * @throws ParseErrorException template invalid velocity format
-	 * @throws MethodInvocationException error occur when evaluate template in object of context
-	 */
-	def VM(templatePath: String, attributes: Map[String, Any] = Map.empty, charset: String = "utf-8"): Html = {
-		// create context and set attributes
-		val context = new VelocityContext
-		attributes.foreach { case (key, value) => context.put(key, value) }
+  /**
+   * marge velocity template to Html.
+   *
+   * @param templatePath relative path of template file to "file.resource.loader.path"
+   * @param attributes request attributes (default empty)
+   * @param charset encoding template charset (default utf-8)
+   * @return Html
+   * @throws ResourceNotFoundException not found template file
+   * @throws ParseErrorException template invalid velocity format
+   * @throws MethodInvocationException error occur when evaluate template in object of context
+   */
+  def VM(templatePath: String, attributes: Map[String, Any] = Map.empty, charset: String = "utf-8"): Html = {
+    // create context and set attributes
+    val context = new VelocityContext
+    attributes.foreach { case (key, value) => context.put(key, value) }
 
-		// evaluate template by velocity
-		val writer = new StringWriter
-		Velocity.mergeTemplate(templatePath, charset, context, writer)
+    // evaluate template by velocity
+    val writer = new StringWriter
+    Velocity.mergeTemplate(templatePath, charset, context, writer)
 
-		// wrap Html
-		Html(writer.toString)
-	}
+    // wrap Html
+    Html(writer.toString)
+  }
 }
 
 /**
@@ -80,54 +80,54 @@ package object mvc {
  */
 class ScalaUberspect extends UberspectImpl {
 
-	import jp.furyu.play.velocity.ScalaUberspect.{ ScalaMapGetExecutor, ScalaPropertyExecutor }
+  import jp.furyu.play.velocity.ScalaUberspect.{ ScalaMapGetExecutor, ScalaPropertyExecutor }
 
-	override def getIterator(obj: java.lang.Object, i: Info): JavaIterator[_] = {
-		def makeJavaIterator(iter: Iterator[_]) = new JavaIterator[AnyRef] {
-			override def hasNext() = iter.hasNext
-			override def next() = iter.next().asInstanceOf[AnyRef]
-			override def remove() = throw new java.lang.UnsupportedOperationException("Remove not supported")
-		}
+  override def getIterator(obj: java.lang.Object, i: Info): JavaIterator[_] = {
+    def makeJavaIterator(iter: Iterator[_]) = new JavaIterator[AnyRef] {
+      override def hasNext() = iter.hasNext
+      override def next() = iter.next().asInstanceOf[AnyRef]
+      override def remove() = throw new java.lang.UnsupportedOperationException("Remove not supported")
+    }
 
-		obj match {
-			case i: Iterable[_] => makeJavaIterator(i.iterator)
-			case i: Iterator[_] => makeJavaIterator(i)
-			case _ => super.getIterator(obj, i)
-		}
-	}
+    obj match {
+      case i: Iterable[_] => makeJavaIterator(i.iterator)
+      case i: Iterator[_] => makeJavaIterator(i)
+      case _ => super.getIterator(obj, i)
+    }
+  }
 
-	override def getPropertyGet(obj: java.lang.Object, identifier: String, i: Info): VelPropertyGet = {
-		if (obj != null) {
-			val claz = obj.getClass()
+  override def getPropertyGet(obj: java.lang.Object, identifier: String, i: Info): VelPropertyGet = {
+    if (obj != null) {
+      val claz = obj.getClass()
 
-			val executor = obj match {
-				case m: Map[_, _] => new ScalaMapGetExecutor(log, claz, identifier)
-				case _ => new ScalaPropertyExecutor(log, introspector, claz, identifier)
-			}
+      val executor = obj match {
+        case m: Map[_, _] => new ScalaMapGetExecutor(log, claz, identifier)
+        case _ => new ScalaPropertyExecutor(log, introspector, claz, identifier)
+      }
 
-			if (executor.isAlive) {
-				new VelGetterImpl(executor)
-			} else {
-				super.getPropertyGet(obj, identifier, i)
-			}
-		} else {
-			null
-		}
-	}
+      if (executor.isAlive) {
+        new VelGetterImpl(executor)
+      } else {
+        super.getPropertyGet(obj, identifier, i)
+      }
+    } else {
+      null
+    }
+  }
 }
 object ScalaUberspect {
 
-	private class ScalaPropertyExecutor(log: Log, introspector: Introspector, clazz: java.lang.Class[_], property: String) extends PropertyExecutor(log, introspector, clazz, property) {
-		override def discover(clazz: java.lang.Class[_], property: String) = {
-			setMethod(introspector.getMethod(clazz, property, Array[java.lang.Object]()))
-			if (!isAlive()) {
-				super.discover(clazz, property)
-			}
-		}
-	}
+  private class ScalaPropertyExecutor(log: Log, introspector: Introspector, clazz: java.lang.Class[_], property: String) extends PropertyExecutor(log, introspector, clazz, property) {
+    override def discover(clazz: java.lang.Class[_], property: String) = {
+      setMethod(introspector.getMethod(clazz, property, Array[java.lang.Object]()))
+      if (!isAlive()) {
+        super.discover(clazz, property)
+      }
+    }
+  }
 
-	private class ScalaMapGetExecutor(val llog: Log, val clazz: java.lang.Class[_], val property: String) extends MapGetExecutor(llog, clazz, property) {
-		override def isAlive = true
-		override def execute(o: AnyRef) = o.asInstanceOf[Map[String, AnyRef]].getOrElse[AnyRef](property, null).asInstanceOf[java.lang.Object]
-	}
+  private class ScalaMapGetExecutor(val llog: Log, val clazz: java.lang.Class[_], val property: String) extends MapGetExecutor(llog, clazz, property) {
+    override def isAlive = true
+    override def execute(o: AnyRef) = o.asInstanceOf[Map[String, AnyRef]].getOrElse[AnyRef](property, null).asInstanceOf[java.lang.Object]
+  }
 }
