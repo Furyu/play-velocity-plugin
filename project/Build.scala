@@ -9,7 +9,7 @@ object ApplicationBuild extends Build {
 
 	val appOrganization	= "jp.furyu"
   val appName         = "play-velocity-plugin"
-  val appVersion      = "1.0-SNAPSHOT"
+  val appVersion      = "1.1-SNAPSHOT"
 
   lazy val scalaRiformSettings = ScalariformKeys.preferences := FormattingPreferences().setPreference(IndentWithTabs, false).setPreference(DoubleIndentClassDeclaration, true).setPreference(PreserveDanglingCloseParenthesis, true)
 
