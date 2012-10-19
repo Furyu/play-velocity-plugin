@@ -5,7 +5,7 @@ import jp.furyu.play.velocity.mvc.VM
 
 object Application extends Controller {
 
-  def index = Action {
+  def index = Action { implicit request =>
     val args = Map(
       "name" -> "hoge",
       "link" -> new LinkTool,
@@ -16,14 +16,14 @@ object Application extends Controller {
     Ok(VM("vm/template.vm", args))
   }
 
-  def index2(kind: String, index: Int) = Action {
+  def index2(kind: String, index: Int) = Action { implicit request =>
     val args = Map(
       "kind" -> kind,
       "index" -> index)
     Ok(VM("vm/template2.vm", args))
   }
 
-  def index3 = Action {
+  def index3 = Action { implicit request =>
     Ok(VM("vm/template3.vm"))
   }
 }
@@ -35,3 +35,10 @@ class LinkTool() {
 }
 
 case class User(id: Long, name: String)
+
+class ResourceFinderImpl extends jp.furyu.play.velocity.ResourceFinder {
+  def find(request: RequestHeader, resourceName: String): String = {
+    jp.furyu.play.velocity.VelocityPlugin.Logger.trace("ResourceFinderImpl#find resourceName[%s], request.uri[%s]".format(resourceName, request.uri))
+    resourceName
+  }
+}
