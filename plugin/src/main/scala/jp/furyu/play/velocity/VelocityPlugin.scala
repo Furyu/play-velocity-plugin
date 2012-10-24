@@ -48,7 +48,7 @@ class VelocityPlugin(app: Application) extends Plugin {
     engine
   }
 
-  override lazy val enabled: Boolean = true
+  override val enabled: Boolean = true
 }
 
 package object mvc {
