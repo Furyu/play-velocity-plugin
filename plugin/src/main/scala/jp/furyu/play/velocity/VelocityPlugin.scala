@@ -3,7 +3,7 @@ package jp.furyu.play.velocity
 import java.io.StringWriter
 import java.util.{ Iterator => JavaIterator, Properties }
 
-import org.apache.velocity.app.Velocity
+import org.apache.velocity.app.VelocityEngine
 import org.apache.velocity.runtime.log.Log
 import org.apache.velocity.runtime.parser.node.MapGetExecutor
 import org.apache.velocity.runtime.parser.node.PropertyExecutor
@@ -25,21 +25,30 @@ import play.api.Plugin
  */
 class VelocityPlugin(app: Application) extends Plugin {
 
+  lazy val Logger = play.api.Logger("jp.furyu.play.velocity.VelocityPlugin")
   private val VelocityPluginRuntimeProperties = "velocity_plugin.properties"
 
-  override def onStart() {
+  lazy val engine: VelocityEngine = {
     // initialize velocity engine
     val prop = new Properties
     val is = this.getClass().getResourceAsStream("/" + VelocityPluginRuntimeProperties)
     if (is != null) {
+      Logger.info("setup engine in [%s]".format(VelocityPluginRuntimeProperties))
       prop.load(is)
     }
-    Velocity.init(prop)
+
+    val engine = new VelocityEngine(prop)
+    engine.init
+
+    engine
   }
 
-  override def onStop() {
+  override def onStart() {
+    Logger.info("initialize engine")
+    engine
   }
-  override def enabled: Boolean = true
+
+  override val enabled: Boolean = true
 }
 
 package object mvc {
@@ -56,13 +65,16 @@ package object mvc {
    * @throws MethodInvocationException error occur when evaluate template in object of context
    */
   def VM(templatePath: String, attributes: Map[String, Any] = Map.empty, charset: String = "utf-8"): Html = {
+    val plugin = play.api.Play.current.plugin[VelocityPlugin]
+      .getOrElse(throw new IllegalStateException("VelocityPlugin not installed"))
+
     // create context and set attributes
     val context = new VelocityContext
     attributes.foreach { case (key, value) => context.put(key, value) }
 
     // evaluate template by velocity
     val writer = new StringWriter
-    Velocity.mergeTemplate(templatePath, charset, context, writer)
+    plugin.engine.mergeTemplate(templatePath, charset, context, writer)
 
     // wrap Html
     Html(writer.toString)
