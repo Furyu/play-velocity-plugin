@@ -18,7 +18,9 @@ object ApplicationBuild extends Build {
   lazy val plugin = Project(appName, base = file("plugin")).settings(
     libraryDependencies ++= Seq(
       "play" %% "play" % "2.0",
-      "org.apache.velocity" % "velocity" % "1.7" withSources()
+      "org.apache.velocity" % "velocity" % "1.7" withSources(),
+      "org.specs2" %% "specs2" % "1.12.2" % "test",
+      "play" %% "play-test" % "2.0" % "test"
     ),
     organization := appOrganization,
     version := appVersion,
