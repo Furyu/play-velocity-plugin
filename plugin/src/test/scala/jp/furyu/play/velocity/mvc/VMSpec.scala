@@ -69,6 +69,23 @@ class VMSpec extends Specification {
       }
     }
 
+    "use" in {
+      "set engine to use for evaluate templates" in runApp {
+        val property = DefaultProperty
+        property.setProperty("runtime.references.strict", "true")
+        val engine = new VelocityEngine(property)
+
+        use(engine)
+
+        try {
+          VM("test_template.vm", Map.empty, engine).body === """fuga_value"""
+          failure("VelocityEigin is not strict mode")
+        } catch {
+          case e: org.apache.velocity.exception.MethodInvocationException => e.getMessage must contain("fuga")
+        }
+      }
+    }
+
   }
 
 }

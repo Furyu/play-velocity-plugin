@@ -60,12 +60,26 @@ package object mvc {
   private lazy val plugin = play.api.Play.current.plugin[VelocityPlugin]
     .getOrElse(throw new IllegalStateException("VelocityPlugin not installed"))
 
+  private var engine = plugin.engine
+
+  /** an instance of Properties which contain same values of plugin properties */
   lazy val DefaultProperty: Properties = {
-    plugin.DefaultProperty
+    plugin.DefaultProperty.clone.asInstanceOf[Properties]
   }
 
+  /** an instance of VelocityEngine which plugin use default */
   lazy val DefaultEngine: VelocityEngine = {
     plugin.engine
+  }
+
+  /**
+   * Set using engine.<br>
+   * This method is called when attaching any properties in small scope.<br>
+   *
+   * @params a instance to merge templates
+   */
+  def use(engine: VelocityEngine) = {
+    this.engine = engine
   }
 
   /**
