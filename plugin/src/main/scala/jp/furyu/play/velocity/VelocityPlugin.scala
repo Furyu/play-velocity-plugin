@@ -12,11 +12,15 @@ import org.apache.velocity.util.introspection.Info
 import org.apache.velocity.util.introspection.Introspector
 import org.apache.velocity.util.introspection.UberspectImpl
 import org.apache.velocity.util.introspection.VelPropertyGet
-import org.apache.velocity.VelocityContext
 
 import play.api.templates.Html
 import play.api.Application
 import play.api.Plugin
+import org.apache.velocity.runtime.resource.{ Resource, ResourceManagerImpl }
+import util.DynamicVariable
+import play.api.mvc.RequestHeader
+import org.apache.velocity.VelocityContext
+import org.apache.velocity.util.ClassUtils
 
 /**
  * Velocity Plugin for Play2!
@@ -25,15 +29,12 @@ import play.api.Plugin
  */
 class VelocityPlugin(app: Application) extends Plugin {
 
-  lazy val Logger = play.api.Logger("jp.furyu.play.velocity.VelocityPlugin")
-  private val VelocityPluginRuntimeProperties = "velocity_plugin.properties"
-
   lazy val engine: VelocityEngine = {
     // initialize velocity engine
     val prop = new Properties
-    val is = this.getClass().getResourceAsStream("/" + VelocityPluginRuntimeProperties)
+    val is = this.getClass().getResourceAsStream("/" + VelocityPlugin.RuntimePropertiesFileName)
     if (is != null) {
-      Logger.info("setup engine in [%s]".format(VelocityPluginRuntimeProperties))
+      VelocityPlugin.Logger.info("setup engine in [%s]".format(VelocityPlugin.RuntimePropertiesFileName))
       prop.load(is)
     }
 
@@ -44,11 +45,17 @@ class VelocityPlugin(app: Application) extends Plugin {
   }
 
   override def onStart() {
-    Logger.info("initialize engine")
+    VelocityPlugin.Logger.info("initialize engine")
     engine
   }
 
   override val enabled: Boolean = true
+}
+object VelocityPlugin {
+  lazy val Logger = play.api.Logger("jp.furyu.play.velocity.VelocityPlugin")
+  val RuntimePropertiesFileName = "velocity_plugin.properties"
+
+  def current: VelocityPlugin = play.api.Play.current.plugin[VelocityPlugin].getOrElse(throw new IllegalStateException("VelocityPlugin not installed"))
 }
 
 package object mvc {
@@ -64,9 +71,9 @@ package object mvc {
    * @throws ParseErrorException template invalid velocity format
    * @throws MethodInvocationException error occur when evaluate template in object of context
    */
-  def VM(templatePath: String, attributes: Map[String, Any] = Map.empty, charset: String = "utf-8"): Html = {
-    val plugin = play.api.Play.current.plugin[VelocityPlugin]
-      .getOrElse(throw new IllegalStateException("VelocityPlugin not installed"))
+  def VM(templatePath: String, attributes: Map[String, Any] = Map.empty, charset: String = "utf-8")(implicit request: RequestHeader): Html = {
+    // set request to threadlocal value
+    RequestContext.current.value = Some(RequestContext(request))
 
     // create context and set attributes
     val context = new VelocityContext
@@ -74,7 +81,7 @@ package object mvc {
 
     // evaluate template by velocity
     val writer = new StringWriter
-    plugin.engine.mergeTemplate(templatePath, charset, context, writer)
+    VelocityPlugin.current.engine.mergeTemplate(templatePath, charset, context, writer)
 
     // wrap Html
     Html(writer.toString)
@@ -142,4 +149,63 @@ object ScalaUberspect {
     override def isAlive = true
     override def execute(o: AnyRef) = o.asInstanceOf[Map[String, AnyRef]].getOrElse[AnyRef](property, null).asInstanceOf[java.lang.Object]
   }
+}
+
+/**
+ * This is abstract class of the resource finder, should extend.
+ */
+trait ResourceFinder {
+
+  /**
+   * rewrite resourceName by request.
+   *
+   * @param request
+   * @param resourceName relative path of resource
+   * @return rewrited relative path of resource
+   */
+  def find(request: RequestHeader, resourceName: String): String
+}
+
+/**
+ * This is extended @{link ResourceManagerImpl} to be able to rewrite resource path by request.
+ */
+class RequestRewritableResourceManagerImpl extends ResourceManagerImpl {
+
+  private lazy val ResourceFinderClassPropertyKey: String = "resource.finder.class"
+
+  /**
+   * rewrite resourceName by request.<br>
+   * need to implement @{link ResourceFinder} and set <tt>resource.finder.class</tt> to properties.
+   *
+   * @param request
+   * @param resourceName relative path of resource
+   * @return rewrited relative path of resource
+   */
+  protected def rewriteResource(request: RequestHeader, resourceName: String): String = {
+    lazy val resourceFinderClassName = VelocityPlugin.current
+      .engine.getProperty(ResourceFinderClassPropertyKey).asInstanceOf[String]
+
+    scala.util.control.Exception.allCatch opt ClassUtils.getNewInstance(resourceFinderClassName) match {
+      case Some(finder) if finder.isInstanceOf[ResourceFinder] => {
+        finder.asInstanceOf[ResourceFinder].find(request, resourceName)
+      }
+      case _ => {
+        VelocityPlugin.Logger.warn("ResourceFinder not found or plugin setting is invalid.")
+        resourceName
+      }
+    }
+  }
+
+  override def getResource(resourceName: String, resourceType: Int, encoding: String): Resource = {
+    val rewritedResourceName = RequestContext.current.value match {
+      case Some(v) => rewriteResource(v.request, resourceName)
+      case None => resourceName // do nothing.
+    }
+    super.getResource(rewritedResourceName, resourceType, encoding)
+  }
+}
+
+private case class RequestContext(request: RequestHeader)
+private object RequestContext {
+  val current = new DynamicVariable[Option[RequestContext]](None)
 }
