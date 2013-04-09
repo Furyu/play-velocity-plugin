@@ -28,8 +28,7 @@ class VelocityPlugin(app: Application) extends Plugin {
   lazy val Logger = play.api.Logger("jp.furyu.play.velocity.VelocityPlugin")
   private val VelocityPluginRuntimeProperties = "velocity_plugin.properties"
 
-  lazy val engine: VelocityEngine = {
-    // initialize velocity engine
+  lazy val DefaultProperty: Properties = {
     val prop = new Properties
     val is = this.getClass().getResourceAsStream("/" + VelocityPluginRuntimeProperties)
     if (is != null) {
@@ -37,7 +36,13 @@ class VelocityPlugin(app: Application) extends Plugin {
       prop.load(is)
     }
 
-    val engine = new VelocityEngine(prop)
+    prop
+  }
+
+  lazy val engine: VelocityEngine = {
+    // initialize velocity engine
+
+    val engine = new VelocityEngine(DefaultProperty)
     engine.init
 
     engine
@@ -52,19 +57,44 @@ class VelocityPlugin(app: Application) extends Plugin {
 }
 
 package object mvc {
+  private lazy val plugin = play.api.Play.current.plugin[VelocityPlugin]
+    .getOrElse(throw new IllegalStateException("VelocityPlugin not installed"))
+
+  private var engine = plugin.engine
+
+  /** an instance of Properties which contain same values of plugin properties */
+  lazy val DefaultProperty: Properties = {
+    plugin.DefaultProperty.clone.asInstanceOf[Properties]
+  }
+
+  /** an instance of VelocityEngine which plugin use default */
+  lazy val DefaultEngine: VelocityEngine = {
+    plugin.engine
+  }
+
+  /**
+   * Set using engine.<br>
+   * This method is called when attaching any properties in small scope.<br>
+   *
+   * @params a instance to merge templates
+   */
+  def use(engine: VelocityEngine) = {
+    this.engine = engine
+  }
 
   /**
    * marge velocity template to Html.
    *
    * @param templatePath relative path of template file to "file.resource.loader.path"
    * @param attributes request attributes (default empty)
+   * @param an instance of VelocityEngin to use (default DefaultEngine)
    * @param charset encoding template charset (default utf-8)
    * @return Html
    * @throws ResourceNotFoundException not found template file
    * @throws ParseErrorException template invalid velocity format
    * @throws MethodInvocationException error occur when evaluate template in object of context
    */
-  def VM(templatePath: String, attributes: Map[String, Any] = Map.empty, charset: String = "utf-8"): Html = {
+  def VM(templatePath: String, attributes: Map[String, Any] = Map.empty, engine: VelocityEngine = DefaultEngine, charset: String = "utf-8"): Html = {
     val plugin = play.api.Play.current.plugin[VelocityPlugin]
       .getOrElse(throw new IllegalStateException("VelocityPlugin not installed"))
 
@@ -74,7 +104,8 @@ package object mvc {
 
     // evaluate template by velocity
     val writer = new StringWriter
-    plugin.engine.mergeTemplate(templatePath, charset, context, writer)
+
+    engine.mergeTemplate(templatePath, charset, context, writer)
 
     // wrap Html
     Html(writer.toString)
