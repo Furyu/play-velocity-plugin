@@ -38,6 +38,7 @@ import org.apache.velocity.VelocityContext
 import play.api.templates.Html
 import play.api.Application
 import play.api.Plugin
+import play.api.mvc.{ Handler, RequestHeader }
 
 /**
  * Velocity Plugin for Play2!
@@ -46,7 +47,7 @@ import play.api.Plugin
  */
 class VelocityPlugin(app: Application) extends Plugin {
 
-  lazy val Logger = play.api.Logger("jp.furyu.play.velocity.VelocityPlugin")
+  private lazy val logger = play.api.Logger("jp.furyu.play.velocity.VelocityPlugin")
   private val VelocityPluginRuntimeProperties = "velocity_plugin.properties"
 
   lazy val engine: VelocityEngine = {
@@ -54,7 +55,7 @@ class VelocityPlugin(app: Application) extends Plugin {
     val prop = new Properties
     val is = this.getClass().getResourceAsStream("/" + VelocityPluginRuntimeProperties)
     if (is != null) {
-      Logger.info("setup engine in [%s]".format(VelocityPluginRuntimeProperties))
+      logger.info("setup engine in [%s]".format(VelocityPluginRuntimeProperties))
       prop.load(is)
     }
 
@@ -65,7 +66,7 @@ class VelocityPlugin(app: Application) extends Plugin {
   }
 
   override def onStart() {
-    Logger.info("initialize engine")
+    logger.info("initialize engine")
     engine
   }
 
@@ -163,4 +164,40 @@ object ScalaUberspect {
     override def isAlive = true
     override def execute(o: AnyRef) = o.asInstanceOf[Map[String, AnyRef]].getOrElse[AnyRef](property, null).asInstanceOf[java.lang.Object]
   }
+}
+
+/**
+ * GlobalSettings for VelocityPlugin.
+ *
+ * Support:
+ *   direct access to velocity template without Controller.
+ *   (localhost:9000/hoge -> hoge.vm)
+ */
+trait VelocityPluginGlobalSettings extends play.api.GlobalSettings {
+
+  private lazy val enablePlugin = play.api.Play.current.plugin[jp.furyu.play.velocity.VelocityPlugin].isDefined
+
+  override def onRouteRequest(request: RequestHeader): Option[Handler] = {
+    if (enablePlugin) {
+      super.onRouteRequest(request).orElse {
+        // request.path: /hoge -> hoge.vm
+        val vmFileName = request.path.substring(1) + ".vm"
+
+        val vmFile = new java.io.File(vmFileName)
+        // check file existence before call vm function because use stack_trace in play error page.
+        if (vmFile.exists()) {
+          scala.util.control.Exception.allCatch.opt {
+            play.api.mvc.Action {
+              play.api.mvc.Results.Ok(jp.furyu.play.velocity.mvc.VM(vmFileName))
+            }
+          }
+        } else {
+          None
+        }
+      }
+    } else {
+      super.onRouteRequest(request)
+    }
+  }
+
 }
