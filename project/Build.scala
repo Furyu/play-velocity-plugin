@@ -44,7 +44,7 @@ object ApplicationBuild extends Build {
     crossScalaVersions := appScalaCrossVersions,
     resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
     libraryDependencies ++= Seq(
-      "play" % "play" % "[2.0,)" % "provided" cross CrossVersion.binaryMapped {
+      "play" % "play" % "[2.0,)" cross CrossVersion.binaryMapped {
         case "2.10.0" => "2.10"
         case x => x
     }),
