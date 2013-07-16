@@ -55,7 +55,7 @@ object ApplicationBuild extends Build {
       }
     }),
     libraryDependencies ++= Seq(
-      "org.apache.velocity" % "velocity" % "[1.7,)" withSources(),
+      "org.apache.velocity" % "velocity" % "[1.7,)",
       "play" %% "play-test" % "[2.0,)" % "test",
       "commons-lang" % "commons-lang" % "2.6"
     ),
