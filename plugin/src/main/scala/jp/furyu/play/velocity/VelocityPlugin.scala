@@ -71,6 +71,19 @@ class VelocityPlugin(app: Application) extends Plugin {
   }
 
   override val enabled: Boolean = true
+
+  import scala.collection.mutable.HashMap
+  lazy val globalAttributes: HashMap[String, Any] = HashMap.empty
+
+  def addGlobal(attributes: Map[String, Any]) {
+    globalAttributes ++= attributes
+  }
+
+  def removeGlobal(keys: Set[String]) {
+    keys.foreach { key =>
+      globalAttributes -= key
+    }
+  }
 }
 
 package object mvc {
@@ -92,7 +105,7 @@ package object mvc {
 
     // create context and set attributes
     val context = new VelocityContext
-    attributes.foreach { case (key, value) => context.put(key, value) }
+    (plugin.globalAttributes ++ attributes).foreach { case (key, value) => context.put(key, value) }
 
     // evaluate template by velocity
     val writer = new StringWriter
@@ -175,7 +188,8 @@ object ScalaUberspect {
  */
 trait VelocityPluginGlobalSettings extends play.api.GlobalSettings {
 
-  private lazy val enablePlugin = play.api.Play.current.plugin[jp.furyu.play.velocity.VelocityPlugin].isDefined
+  private lazy val plugin = play.api.Play.current.plugin[jp.furyu.play.velocity.VelocityPlugin]
+  private lazy val enablePlugin = plugin.isDefined
 
   override def onRouteRequest(request: RequestHeader): Option[Handler] = {
     if (enablePlugin) {
@@ -188,7 +202,7 @@ trait VelocityPluginGlobalSettings extends play.api.GlobalSettings {
         if (vmFile.exists()) {
           scala.util.control.Exception.allCatch.opt {
             play.api.mvc.Action {
-              play.api.mvc.Results.Ok(jp.furyu.play.velocity.mvc.VM(vmFileName))
+              play.api.mvc.Results.Ok(jp.furyu.play.velocity.mvc.VM(vmFileName, plugin.get.globalAttributes.toMap))
             }
           }
         } else {
