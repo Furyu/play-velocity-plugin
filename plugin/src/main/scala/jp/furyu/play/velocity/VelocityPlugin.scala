@@ -112,7 +112,7 @@ package object mvc {
     plugin.engine.mergeTemplate(templatePath, charset, context, writer)
 
     // wrap Html
-    Html(writer.toString)
+    play.api.templates.HtmlFormat.raw(writer.toString)
   }
 }
 
