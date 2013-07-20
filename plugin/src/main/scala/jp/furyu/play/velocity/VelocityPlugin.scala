@@ -188,8 +188,8 @@ object ScalaUberspect {
  */
 trait VelocityPluginGlobalSettings extends play.api.GlobalSettings {
 
-  private lazy val plugin = play.api.Play.current.plugin[jp.furyu.play.velocity.VelocityPlugin]
-  private lazy val enablePlugin = plugin.isDefined
+  protected lazy val velocityPlugin = play.api.Play.current.plugin[jp.furyu.play.velocity.VelocityPlugin]
+  protected lazy val enablePlugin = velocityPlugin.isDefined
 
   override def onRouteRequest(request: RequestHeader): Option[Handler] = {
     if (enablePlugin) {
@@ -202,7 +202,7 @@ trait VelocityPluginGlobalSettings extends play.api.GlobalSettings {
         if (vmFile.exists()) {
           scala.util.control.Exception.allCatch.opt {
             play.api.mvc.Action {
-              play.api.mvc.Results.Ok(jp.furyu.play.velocity.mvc.VM(vmFileName, plugin.get.globalAttributes.toMap))
+              play.api.mvc.Results.Ok(jp.furyu.play.velocity.mvc.VM(vmFileName, velocityPlugin.get.globalAttributes.toMap))
             }
           }
         } else {
