@@ -71,19 +71,6 @@ class VelocityPlugin(app: Application) extends Plugin {
   }
 
   override val enabled: Boolean = true
-
-  import scala.collection.mutable.HashMap
-  lazy val globalAttributes: HashMap[String, Any] = HashMap.empty
-
-  def addGlobal(attributes: Map[String, Any]) {
-    globalAttributes ++= attributes
-  }
-
-  def removeGlobal(keys: Set[String]) {
-    keys.foreach { key =>
-      globalAttributes -= key
-    }
-  }
 }
 
 package object mvc {
@@ -105,7 +92,7 @@ package object mvc {
 
     // create context and set attributes
     val context = new VelocityContext
-    (plugin.globalAttributes ++ attributes).foreach { case (key, value) => context.put(key, value) }
+    attributes.foreach { case (key, value) => context.put(key, value) }
 
     // evaluate template by velocity
     val writer = new StringWriter
@@ -191,6 +178,15 @@ trait VelocityPluginGlobalSettings extends play.api.GlobalSettings {
   protected lazy val velocityPlugin = play.api.Play.current.plugin[jp.furyu.play.velocity.VelocityPlugin]
   protected lazy val enablePlugin = velocityPlugin.isDefined
 
+  /**
+   * create attribute for static access.
+   * this is used in #onRouteRequest.
+   *
+   * @param request
+   * @return
+   */
+  protected def createStaticAttribute(request: RequestHeader): Map[String, Any]
+
   override def onRouteRequest(request: RequestHeader): Option[Handler] = {
     if (enablePlugin) {
       super.onRouteRequest(request).orElse {
@@ -202,10 +198,11 @@ trait VelocityPluginGlobalSettings extends play.api.GlobalSettings {
         if (vmFile.exists()) {
           scala.util.control.Exception.allCatch.opt {
             play.api.mvc.Action {
-              play.api.mvc.Results.Ok(jp.furyu.play.velocity.mvc.VM(vmFileName, velocityPlugin.get.globalAttributes.toMap))
+              play.api.mvc.Results.Ok(jp.furyu.play.velocity.mvc.VM(vmFileName, createStaticAttribute(request)))
             }
           }
         } else {
+          play.api.Logger(this.getClass).trace("velocity template[%s] not found, so don't access velocity template directly.".format(vmFileName))
           None
         }
       }
