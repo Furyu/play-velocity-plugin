@@ -29,7 +29,7 @@ object ApplicationBuild extends Build {
 
   val appOrganization	= "jp.furyu"
   val appName         = "play-velocity-plugin"
-  val appVersion      = "1.1.1-SNAPSHOT"
+  val appVersion      = "1.1"
   val appScalaVersion = "2.10.0"
   val appScalaCrossVersions = Seq("2.10.0", "2.9.1")
 
