@@ -59,18 +59,6 @@ If customize its settings, add file `velocity_plugin.properties` and edit any se
 runtime.introspector.uberspect = jp.furyu.play.velocity.ScalaUberspect
 ```
 
-## Direct Access to Velocity Template.
-
-Access `localhost:9000/hoge`, and then display `hoge.vm`.
-
-please configure below.
-
-```
-object Global extends VelocityPluginGlobalSettings {
-  ...
-}
-```
-
 ## Sample Scala Play Project.
 
 A sample application is available, to run it:

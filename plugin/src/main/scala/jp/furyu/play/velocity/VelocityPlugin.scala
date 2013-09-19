@@ -38,7 +38,6 @@ import org.apache.velocity.VelocityContext
 import play.api.templates.Html
 import play.api.Application
 import play.api.Plugin
-import play.api.mvc.{ Handler, RequestHeader }
 
 /**
  * Velocity Plugin for Play2!
@@ -163,52 +162,6 @@ object ScalaUberspect {
   private class ScalaMapGetExecutor(val llog: Log, val clazz: java.lang.Class[_], val property: String) extends MapGetExecutor(llog, clazz, property) {
     override def isAlive = true
     override def execute(o: AnyRef) = o.asInstanceOf[Map[String, AnyRef]].getOrElse[AnyRef](property, null).asInstanceOf[java.lang.Object]
-  }
-}
-
-/**
- * GlobalSettings for VelocityPlugin.
- *
- * Support:
- *   direct access to velocity template without Controller.
- *   (localhost:9000/hoge -> hoge.vm)
- */
-trait VelocityPluginGlobalSettings extends play.api.GlobalSettings {
-
-  protected lazy val velocityPlugin = play.api.Play.current.plugin[jp.furyu.play.velocity.VelocityPlugin]
-  protected lazy val enablePlugin = velocityPlugin.isDefined
-
-  /**
-   * create attribute for static access.
-   * this is used in #onRouteRequest.
-   *
-   * @param request
-   * @return
-   */
-  protected def createStaticAttribute(request: RequestHeader): Map[String, Any]
-
-  override def onRouteRequest(request: RequestHeader): Option[Handler] = {
-    if (enablePlugin) {
-      super.onRouteRequest(request).orElse {
-        // request.path: /hoge -> hoge.vm
-        val vmFileName = request.path.substring(1) + ".vm"
-
-        val vmFile = new java.io.File(vmFileName)
-        // check file existence before call vm function because use stack_trace in play error page.
-        if (vmFile.exists()) {
-          scala.util.control.Exception.allCatch.opt {
-            play.api.mvc.Action {
-              play.api.mvc.Results.Ok(jp.furyu.play.velocity.mvc.VM(vmFileName, createStaticAttribute(request)))
-            }
-          }
-        } else {
-          play.api.Logger(this.getClass).trace("velocity template[%s] not found, so don't access velocity template directly.".format(vmFileName))
-          None
-        }
-      }
-    } else {
-      super.onRouteRequest(request)
-    }
   }
 
 }
