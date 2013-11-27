@@ -24,6 +24,8 @@ Edit file `conf/play.plugins`
 ### 2. Call `VM` Function in your Controller.
 
 ```
+import jp.furyu.play.velocity.mvc._
+
 object YourController extends Controller {
   def index = Action {
     Ok(VM("vm/index.vm", Map("name" -> "__name__", "title" -> "__title__")))
