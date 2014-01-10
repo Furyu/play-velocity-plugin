@@ -111,6 +111,7 @@ object ApplicationBuild extends Build {
   )
 
   lazy val appReleaseSettings = {
+    // relese for cross build : ]# sbt release cross
     sbtrelease.ReleasePlugin.releaseSettings ++ Seq(
       sbtrelease.ReleasePlugin.ReleaseKeys.versionFile := file("project/version.sbt"),
       sbtrelease.ReleasePlugin.ReleaseKeys.releaseProcess := Seq[sbtrelease.ReleaseStep](
