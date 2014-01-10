@@ -23,45 +23,59 @@ import sbt._
 import Keys._
 import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform._
-import play.Project._
 
 object ApplicationBuild extends Build {
 
   val appOrganization	= "jp.furyu"
   val appName         = "play-velocity-plugin"
-  val appVersion      = "1.1.1"
   val appScalaVersion = "2.10.0"
-  val appScalaCrossVersions = Seq("2.10.0", "2.9.1")
+  val appScalaCrossVersions = Seq(appScalaVersion, "2.9.1")
+  // version is defined in version.sbt in order to support sbt-release
 
-  lazy val scalaRiformSettings = ScalariformKeys.preferences := FormattingPreferences().setPreference(IndentWithTabs, false).setPreference(DoubleIndentClassDeclaration, true).setPreference(PreserveDanglingCloseParenthesis, true)
+  lazy val appScalaRiformSettings = ScalariformKeys.preferences := FormattingPreferences().setPreference(IndentWithTabs, false).setPreference(DoubleIndentClassDeclaration, true).setPreference(PreserveDanglingCloseParenthesis, true)
 
   lazy val root = Project("root", base = file("."))
     .dependsOn(plugin)
     .aggregate(scalaSample)
 
-  lazy val plugin = Project(appName, base = file("plugin")).settings(Defaults.defaultSettings: _*).settings(
-    scalaVersion := appScalaVersion,
-    crossScalaVersions := appScalaCrossVersions,
-    resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
-    libraryDependencies <+= scalaVersion(v => {
-      v match {
-        case "2.10.0" => "play" % "play_2.10" % "[2.1,)"
-        case "2.9.1" => "play" % "play_2.9.1" % "[2.0,)"
-      }
-    }),
-    libraryDependencies <+= scalaVersion(v => {
-      v match {
-        case "2.10.0" => "org.specs2" %% "specs2" % "1.14" % "test"
-        case "2.9.1" => "org.specs2" %% "specs2" % "1.12.3" % "test"
-      }
-    }),
-    libraryDependencies ++= Seq(
-      "org.apache.velocity" % "velocity" % "[1.7,)",
-      "play" %% "play-test" % "[2.0,)" % "test",
-      "commons-lang" % "commons-lang" % "2.6"
-    ),
+  lazy val plugin = Project(appName, base = file("plugin")).settings(Defaults.defaultSettings: _*)
+    .settings(appPublishSettings: _*)
+    .settings(appReleaseSettings: _*)
+    .settings(scalariformSettings: _*)
+    .settings(appScalaRiformSettings)
+    .settings(
+      scalaVersion := appScalaVersion,
+      crossScalaVersions := appScalaCrossVersions,
+      resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
+      libraryDependencies <+= scalaVersion(v => {
+        v match {
+          case "2.9.1" | "2.9.2" => "play" %% "play" % "[2.0,)" % "provided"
+          case _ => "play" % "play" % "[2.0,)" % "provided" cross CrossVersion.binaryMapped {
+            case "2.10.0" => "2.10"
+            case x => x
+          }
+        }
+      }),
+      libraryDependencies <+= scalaVersion(v => {
+        v match {
+          case "2.10.0" => "org.specs2" %% "specs2" % "1.14" % "test"
+          case "2.9.1" => "org.specs2" %% "specs2" % "1.12.3" % "test"
+        }
+      }),
+      libraryDependencies ++= Seq(
+        "org.apache.velocity" % "velocity" % "[1.7,)",
+        "play" %% "play-test" % "[2.0,)" % "test",
+        "commons-lang" % "commons-lang" % "2.6"
+      )
+    )
+
+  lazy val scalaSample = play.Project("scala-sample", path = file("samples/scala")).settings( 
+    scalaVersion := appScalaVersion
+  ).settings(com.typesafe.sbt.SbtScalariform.scalariformSettings: _*).settings(appScalaRiformSettings).dependsOn(plugin)
+
+  lazy val appPublishSettings = Seq(
+    // version is defined in version.sbt in order to support sbt-release
     organization := appOrganization,
-    version := appVersion,
     publishMavenStyle := true,
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
@@ -94,10 +108,22 @@ object ApplicationBuild extends Build {
         </developer>
       </developers>
     )
-  ).settings(scalariformSettings: _*).settings(scalaRiformSettings)
-  
-  lazy val scalaSample = play.Project("scala-sample", path = file("samples/scala")).settings( 
-    scalaVersion := appScalaVersion
-  ).settings(com.typesafe.sbt.SbtScalariform.scalariformSettings: _*).settings(scalaRiformSettings).dependsOn(plugin)
+  )
+
+  lazy val appReleaseSettings = {
+    sbtrelease.ReleasePlugin.releaseSettings ++ Seq(
+      sbtrelease.ReleasePlugin.ReleaseKeys.versionFile := file("project/version.sbt"),
+      sbtrelease.ReleasePlugin.ReleaseKeys.releaseProcess := Seq[sbtrelease.ReleaseStep](
+        sbtrelease.ReleaseStateTransformations.checkSnapshotDependencies,
+        sbtrelease.ReleaseStateTransformations.inquireVersions,
+        sbtrelease.ReleaseStateTransformations.runTest,
+        sbtrelease.ReleaseStateTransformations.setReleaseVersion,
+        sbtrelease.ReleaseStateTransformations.commitReleaseVersion,
+        sbtrelease.ReleaseStateTransformations.publishArtifacts,
+        sbtrelease.ReleaseStateTransformations.setNextVersion,
+        sbtrelease.ReleaseStateTransformations.commitNextVersion
+      )
+    )
+  }
 
 }
