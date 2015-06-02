@@ -21,62 +21,36 @@
  */
 import sbt._
 import Keys._
-import scalariform.formatter.preferences._
-import com.typesafe.sbt.SbtScalariform._
 
 object ApplicationBuild extends Build {
 
   val appOrganization	= "jp.furyu"
   val appName         = "play-velocity-plugin"
-  val appScalaVersion = "2.10.0"
-  val appScalaCrossVersions = Seq(appScalaVersion, "2.9.1")
-  // version is defined in version.sbt in order to support sbt-release
+  val appVersion      = "1.3-SNAPSHOT"
+  val appScalaVersion = "2.11.1"
+  val appScalaCrossVersions = Seq(appScalaVersion, "2.10.4")
 
-  lazy val appScalaRiformSettings = ScalariformKeys.preferences := FormattingPreferences().setPreference(IndentWithTabs, false).setPreference(DoubleIndentClassDeclaration, true).setPreference(PreserveDanglingCloseParenthesis, true)
-
-  lazy val root = Project("root", base = file("."))
-    .dependsOn(plugin)
-    .aggregate(scalaSample)
-
-  lazy val plugin = Project(appName, base = file("plugin")).settings(Defaults.defaultSettings: _*)
+  lazy val plugin = Project(appName, base = file("plugin"))
     .settings(appPublishSettings: _*)
-    .settings(appReleaseSettings: _*)
-    .settings(scalariformSettings: _*)
-    .settings(appScalaRiformSettings)
+    .settings(appScalariformSettings: _*)
     .settings(
       scalaVersion := appScalaVersion,
       crossScalaVersions := appScalaCrossVersions,
-      resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
-      libraryDependencies <+= scalaVersion(v => {
-        v match {
-          case "2.9.1" | "2.9.2" => "play" %% "play" % "[2.0,)" % "provided"
-          case _ => "play" % "play" % "[2.0,)" % "provided" cross CrossVersion.binaryMapped {
-            case "2.10.0" => "2.10"
-            case x => x
-          }
-        }
-      }),
-      libraryDependencies <+= scalaVersion(v => {
-        v match {
-          case "2.10.0" => "org.specs2" %% "specs2" % "1.14" % "test"
-          case "2.9.1" => "org.specs2" %% "specs2" % "1.12.3" % "test"
-        }
-      }),
+      resolvers += Resolver.typesafeRepo("releases"),
       libraryDependencies ++= Seq(
+        "com.typesafe.play" %% "play" % "2.3.9",
         "org.apache.velocity" % "velocity" % "[1.7,)",
-        "play" %% "play-test" % "[2.0,)" % "test",
-        "commons-lang" % "commons-lang" % "2.6"
+        "commons-lang" % "commons-lang" % "2.6",
+//        "org.specs2" %% "specs2-core" % "3.6" % "test",
+        "com.typesafe.play" %% "play-test" % "2.3.9" % "test"
       )
     )
-
-  lazy val scalaSample = play.Project("scala-sample", path = file("samples/scala")).settings( 
-    scalaVersion := appScalaVersion
-  ).settings(com.typesafe.sbt.SbtScalariform.scalariformSettings: _*).settings(appScalaRiformSettings).dependsOn(plugin)
 
   lazy val appPublishSettings = Seq(
     // version is defined in version.sbt in order to support sbt-release
     organization := appOrganization,
     publishMavenStyle := true,
+    version := appVersion,
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
       if (v.trim.endsWith("SNAPSHOT")) {
@@ -110,20 +84,15 @@ object ApplicationBuild extends Build {
     )
   )
 
-  lazy val appReleaseSettings = {
-    // relese for cross build : ]# sbt release cross
-    sbtrelease.ReleasePlugin.releaseSettings ++ Seq(
-      sbtrelease.ReleasePlugin.ReleaseKeys.versionFile := file("project/version.sbt"),
-      sbtrelease.ReleasePlugin.ReleaseKeys.releaseProcess := Seq[sbtrelease.ReleaseStep](
-        sbtrelease.ReleaseStateTransformations.checkSnapshotDependencies,
-        sbtrelease.ReleaseStateTransformations.inquireVersions,
-        sbtrelease.ReleaseStateTransformations.runTest,
-        sbtrelease.ReleaseStateTransformations.setReleaseVersion,
-        sbtrelease.ReleaseStateTransformations.commitReleaseVersion,
-        sbtrelease.ReleaseStateTransformations.publishArtifacts,
-        sbtrelease.ReleaseStateTransformations.setNextVersion,
-        sbtrelease.ReleaseStateTransformations.commitNextVersion
-      )
+  private lazy val appScalariformSettings = {
+    import com.typesafe.sbt.SbtScalariform
+    import scalariform.formatter.preferences._
+
+    SbtScalariform.scalariformSettings ++ Seq(
+      SbtScalariform.ScalariformKeys.preferences := FormattingPreferences()
+        .setPreference(IndentWithTabs, false)
+        .setPreference(DoubleIndentClassDeclaration, true)
+        .setPreference(PreserveDanglingCloseParenthesis, true)
     )
   }
 
