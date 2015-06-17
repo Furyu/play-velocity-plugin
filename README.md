@@ -15,6 +15,7 @@ See [Apache Velocity Site](http://velocity.apache.org/)
 | 1.1 | 2013/04/08 | enhancement #5 #12 |
 | 1.1.1 | 2013/09/18 | bug fixed #13 |
 | 1.2 | 2014/01/10 | supported play 2.2.x |
+| 1.3 | 2015/06/17 | CrossBuild Scala2.10/2.11 |
 
 # Usage.
 

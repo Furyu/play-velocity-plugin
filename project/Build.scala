@@ -26,7 +26,7 @@ object ApplicationBuild extends Build {
 
   val appOrganization	= "jp.furyu"
   val appName         = "play-velocity-plugin"
-  val appVersion      = "1.3-SNAPSHOT"
+  val appVersion      = "1.3"
   val appScalaVersion = "2.11.1"
   val appScalaCrossVersions = Seq(appScalaVersion, "2.10.4")
 
@@ -41,16 +41,17 @@ object ApplicationBuild extends Build {
         "com.typesafe.play" %% "play" % "2.3.9",
         "org.apache.velocity" % "velocity" % "[1.7,)",
         "commons-lang" % "commons-lang" % "2.6",
-//        "org.specs2" %% "specs2-core" % "3.6" % "test",
-        "com.typesafe.play" %% "play-test" % "2.3.9" % "test"
+        "org.specs2" %% "specs2" % "2.4.2" % "test",
+        "com.typesafe.play" %% "play-test" % "2.3.9" % "test" excludeAll(
+          ExclusionRule(organization = "org.specs2")
+        )
       )
     )
 
   lazy val appPublishSettings = Seq(
-    // version is defined in version.sbt in order to support sbt-release
     organization := appOrganization,
-    publishMavenStyle := true,
     version := appVersion,
+    publishMavenStyle := true,
     publishTo <<= version { (v: String) =>
       val nexus = "https://oss.sonatype.org/"
       if (v.trim.endsWith("SNAPSHOT")) {
