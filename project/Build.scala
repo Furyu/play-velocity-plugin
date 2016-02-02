@@ -21,23 +21,23 @@
  */
 import sbt._
 import Keys._
-import scalariform.formatter.preferences._
-import com.typesafe.sbt.SbtScalariform._
+//import scalariform.formatter.preferences._
+//import com.typesafe.sbt.SbtScalariform._
 import play.Project._
 
 object ApplicationBuild extends Build {
 
   val appOrganization	= "jp.furyu"
   val appName         = "play-velocity-plugin"
-  val appVersion      = "1.1.1"
+  val appVersion      = "1.1.2-SNAPSHOT"
   val appScalaVersion = "2.10.0"
   val appScalaCrossVersions = Seq("2.10.0", "2.9.1")
 
-  lazy val scalaRiformSettings = ScalariformKeys.preferences := FormattingPreferences().setPreference(IndentWithTabs, false).setPreference(DoubleIndentClassDeclaration, true).setPreference(PreserveDanglingCloseParenthesis, true)
+//  lazy val scalaRiformSettings = ScalariformKeys.preferences := FormattingPreferences().setPreference(IndentWithTabs, false).setPreference(DoubleIndentClassDeclaration, true).setPreference(PreserveDanglingCloseParenthesis, true)
 
   lazy val root = Project("root", base = file("."))
     .dependsOn(plugin)
-    .aggregate(scalaSample)
+//    .aggregate(scalaSample)
 
   lazy val plugin = Project(appName, base = file("plugin")).settings(Defaults.defaultSettings: _*).settings(
     scalaVersion := appScalaVersion,
@@ -45,8 +45,8 @@ object ApplicationBuild extends Build {
     resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
     libraryDependencies <+= scalaVersion(v => {
       v match {
-        case "2.10.0" => "play" % "play_2.10" % "[2.1,)"
-        case "2.9.1" => "play" % "play_2.9.1" % "[2.0,)"
+        case "2.10.0" => "play" % "play_2.10" % "2.1.5"
+        case "2.9.1" => "play" % "play_2.9.1" % "2.0"
       }
     }),
     libraryDependencies <+= scalaVersion(v => {
@@ -56,8 +56,8 @@ object ApplicationBuild extends Build {
       }
     }),
     libraryDependencies ++= Seq(
-      "org.apache.velocity" % "velocity" % "[1.7,)",
-      "play" %% "play-test" % "[2.0,)" % "test",
+      "org.apache.velocity" % "velocity" % "1.7",
+//      "play" %% "play-test" % "[2.0,)" % "test",
       "commons-lang" % "commons-lang" % "2.6"
     ),
     organization := appOrganization,
@@ -94,10 +94,11 @@ object ApplicationBuild extends Build {
         </developer>
       </developers>
     )
-  ).settings(scalariformSettings: _*).settings(scalaRiformSettings)
+  )
+//.settings(scalariformSettings: _*).settings(scalaRiformSettings)
   
-  lazy val scalaSample = play.Project("scala-sample", path = file("samples/scala")).settings( 
-    scalaVersion := appScalaVersion
-  ).settings(com.typesafe.sbt.SbtScalariform.scalariformSettings: _*).settings(scalaRiformSettings).dependsOn(plugin)
+//  lazy val scalaSample = play.Project("scala-sample", path = file("samples/scala")).settings( 
+//    scalaVersion := appScalaVersion
+//  ).settings(com.typesafe.sbt.SbtScalariform.scalariformSettings: _*).settings(scalaRiformSettings).dependsOn(plugin)
 
 }
